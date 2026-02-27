@@ -333,7 +333,7 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-base font-semibold text-foreground tracking-tight">
-                Literature Review Agent
+                Ethical 
               </h1>
               <p className="text-xs text-muted-foreground">
                 AI-powered autonomous academic literature reviews

@@ -2,11 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import mammoth from "mammoth";
-import * as pdfjsLib from "pdfjs-dist";
-
-if (typeof window !== "undefined") {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-}
 import {
   Upload,
   FileText,
@@ -54,76 +49,36 @@ export default function PaperManager({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [previewPaper, setPreviewPaper] = useState<UploadedPaper | null>(null);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load and convert PDF / DOCX when preview opens
+  // Load and convert .docx when preview opens
   useEffect(() => {
-    if (!previewPaper) {
-      setPreviewHtml(null);
-      return;
-    }
-
-    const isPdf = previewPaper.mimeType === "application/pdf";
-    const isDocx =
-      previewPaper.mimeType ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
-    if (!isPdf && !isDocx) {
-      setPreviewHtml(null);
+    if (
+      !previewPaper ||
+      previewPaper.mimeType !==
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      setDocxHtml(null);
       return;
     }
 
     let cancelled = false;
-    setPreviewLoading(true);
-    setPreviewHtml(null);
+    setDocxLoading(true);
+    setDocxHtml(null);
 
     (async () => {
       try {
         const res = await fetch(`/api/papers/${previewPaper._id}`);
         if (!res.ok) throw new Error("Failed to fetch");
         const arrayBuffer = await res.arrayBuffer();
-
-        if (isDocx) {
-          const result = await mammoth.convertToHtml({ arrayBuffer });
-          if (!cancelled) setPreviewHtml(result.value);
-        } else {
-          // PDF: extract text page by page
-          const data = new Uint8Array(arrayBuffer);
-          const pdf = await pdfjsLib.getDocument({ data }).promise;
-          const pages: string[] = [];
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            let lastY: number | null = null;
-            const lines: string[] = [];
-            for (const item of content.items) {
-              if ("str" in item) {
-                const y = item.transform[5];
-                if (lastY !== null && Math.abs(y - lastY) > 2) {
-                  lines.push("\n");
-                }
-                lines.push(item.str);
-                lastY = y;
-              }
-            }
-            const pageText = lines
-              .join("")
-              .split("\n")
-              .map((l) => l.trim())
-              .filter(Boolean);
-            pages.push(
-              `<div class="pdf-page"><p>${pageText.join("</p><p>")}</p></div>`
-            );
-          }
-          if (!cancelled)
-            setPreviewHtml(pages.join('<hr class="my-6 border-border"/>'));
-        }
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        if (!cancelled) setDocxHtml(result.value);
       } catch {
-        if (!cancelled) setPreviewHtml("<p>Failed to load document.</p>");
+        if (!cancelled) setDocxHtml("<p>Failed to load document.</p>");
       } finally {
-        if (!cancelled) setPreviewLoading(false);
+        if (!cancelled) setDocxLoading(false);
       }
     })();
 
@@ -196,7 +151,15 @@ export default function PaperManager({
           {papers.map((paper) => (
             <div
               key={paper._id}
-              className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50 group"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  "application/paper",
+                  JSON.stringify({ _id: paper._id, filename: paper.filename })
+                );
+                e.dataTransfer.effectAllowed = "copy";
+              }}
+              className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50 group cursor-grab active:cursor-grabbing"
             >
               {getFileIcon(paper.mimeType)}
               <div className="flex-1 min-w-0">
@@ -311,22 +274,31 @@ export default function PaperManager({
 
             {/* Body */}
             <div className="flex-1 overflow-auto">
-              {previewLoading ? (
-                <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm">Loading document...</span>
-                </div>
-              ) : previewHtml ? (
-                <div
-                  className="prose prose-sm max-w-none p-6 dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+              {previewPaper.mimeType === "application/pdf" ? (
+                <iframe
+                  src={`/api/papers/${previewPaper._id}`}
+                  className="w-full h-[70vh]"
+                  title={previewPaper.filename}
                 />
+              ) : previewPaper.mimeType ===
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ? (
+                docxLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Loading document...</span>
+                  </div>
+                ) : docxHtml ? (
+                  <div
+                    className="prose prose-sm max-w-none p-6 dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: docxHtml }}
+                  />
+                ) : null
               ) : (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
                   <File className="h-12 w-12" />
                   <p className="text-sm">Preview not available for this file type</p>
                   <a
-                    href={`/api/papers/${previewPaper._id}?dl=1`}
+                    href={`/api/papers/${previewPaper._id}`}
                     className="text-xs text-primary hover:underline"
                   >
                     Download to view

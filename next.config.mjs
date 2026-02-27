@@ -5,6 +5,12 @@ const nextConfig = {
     config.resolve.alias.encoding = false;
     return config;
   },
+  turbopack: {
+    resolveAlias: {
+      canvas: { browser: "" },
+      encoding: { browser: "" },
+    },
+  },
 };
 
 export default nextConfig;
