@@ -153,11 +153,14 @@ export default function PaperManager({
               key={paper._id}
               draggable
               onDragStart={(e) => {
-                e.dataTransfer.setData(
-                  "application/paper",
-                  JSON.stringify({ _id: paper._id, filename: paper.filename })
-                );
+                const payload = JSON.stringify({ _id: paper._id, filename: paper.filename });
+                e.dataTransfer.setData("text/plain", payload);
+                e.dataTransfer.setData("application/paper", payload);
                 e.dataTransfer.effectAllowed = "copy";
+                // Add a drag image hint
+                if (e.currentTarget instanceof HTMLElement) {
+                  e.dataTransfer.setDragImage(e.currentTarget, 10, 10);
+                }
               }}
               className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/50 group cursor-grab active:cursor-grabbing"
             >

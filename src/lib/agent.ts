@@ -11,6 +11,11 @@ import type { Paper } from "./tools";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface AgentEvent {
   type:
     | "status"
@@ -20,7 +25,8 @@ export interface AgentEvent {
     | "review_chunk"
     | "complete"
     | "error"
-    | "papers_count";
+    | "papers_count"
+    | "token_usage";
   data: string | number | Record<string, unknown>;
 }
 
@@ -322,6 +328,8 @@ export async function runAgent(
 ): Promise<void> {
   const client = new Anthropic();
   const collectedPapers = new Map<string, Paper>();
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
 
   onEvent({
     type: "status",
@@ -361,6 +369,11 @@ export async function runAgent(
         tools,
         messages,
       });
+      // Track token usage
+      if (response.usage) {
+        totalInputTokens += response.usage.input_tokens;
+        totalOutputTokens += response.usage.output_tokens;
+      }
     } catch (error) {
       onEvent({
         type: "error",
@@ -508,6 +521,13 @@ export async function runAgent(
         }
       }
     }
+
+    // Track token usage from the stream
+    const finalMessage = await stream.finalMessage();
+    if (finalMessage.usage) {
+      totalInputTokens += finalMessage.usage.input_tokens;
+      totalOutputTokens += finalMessage.usage.output_tokens;
+    }
   } catch (error) {
     if (signal?.aborted) {
       onEvent({ type: "error", data: "Review cancelled by user" });
@@ -521,6 +541,16 @@ export async function runAgent(
     });
     return;
   }
+
+  // Emit token usage summary
+  onEvent({
+    type: "token_usage",
+    data: {
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      totalTokens: totalInputTokens + totalOutputTokens,
+    },
+  });
 
   onEvent({
     type: "complete",

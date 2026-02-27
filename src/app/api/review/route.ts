@@ -1,11 +1,26 @@
 import { runAgent } from "@/lib/agent";
 import { NextRequest } from "next/server";
+import { getAuthFromRequest } from "@/lib/auth";
+import { getDb } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const auth = await getAuthFromRequest(req);
   let topic: string;
+  let apiKeyId: string | null = null;
+
+  // Check for API key auth header
+  const authHeader = req.headers.get("x-api-key");
+  if (authHeader) {
+    const db = await getDb();
+    const key = await db.collection("api_keys").findOne({ key: authHeader, revoked: { $ne: true } });
+    if (key) {
+      apiKeyId = key._id.toString();
+    }
+  }
 
   try {
     const body = await req.json();
@@ -48,6 +63,36 @@ export async function POST(req: NextRequest) {
           topic.trim(),
           (event) => {
             sendEvent(event.type, event.data);
+
+            // Save token usage to DB when we get it
+            if (event.type === "token_usage" && auth) {
+              const usage = event.data as Record<string, unknown>;
+              getDb().then((db) => {
+                db.collection("token_usage").insertOne({
+                  userId: auth.userId,
+                  apiKeyId: apiKeyId || null,
+                  inputTokens: usage.inputTokens,
+                  outputTokens: usage.outputTokens,
+                  totalTokens: usage.totalTokens,
+                  action: "literature_review",
+                  topic: topic.trim(),
+                  createdAt: new Date(),
+                });
+                // Update API key usage count if applicable
+                if (apiKeyId) {
+                  db.collection("api_keys").updateOne(
+                    { _id: new ObjectId(apiKeyId) },
+                    {
+                      $inc: {
+                        totalTokens: usage.totalTokens as number,
+                        requestCount: 1,
+                      },
+                      $set: { lastUsedAt: new Date() },
+                    }
+                  );
+                }
+              }).catch(() => {});
+            }
           },
           abortController.signal
         );

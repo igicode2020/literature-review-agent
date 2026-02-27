@@ -6,6 +6,7 @@ import TopicInput from "@/components/TopicInput";
 import AgentLog, { LogEntry } from "@/components/AgentLog";
 import ReviewPanel from "@/components/ReviewPanel";
 import Sidebar from "@/components/Sidebar";
+import UsagePanel from "@/components/UsagePanel";
 
 interface UserInfo {
   id: string;
@@ -27,6 +28,7 @@ export default function Home() {
   >(null);
   const [currentTopic, setCurrentTopic] = useState("");
   const [viewingHistory, setViewingHistory] = useState(false);
+  const [showingUsage, setShowingUsage] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -72,6 +74,7 @@ export default function Home() {
     setActiveConversationId(null);
     setCurrentTopic("");
     setViewingHistory(false);
+    setShowingUsage(false);
   }, []);
 
   // Save conversation to DB after completion
@@ -354,45 +357,53 @@ export default function Home() {
             user={user}
             onSelectConversation={handleSelectConversation}
             onNewReview={resetState}
+            onShowUsage={() => setShowingUsage(true)}
             activeConversationId={activeConversationId}
+            showingUsage={showingUsage}
           />
         </div>
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Input section */}
-          <div className="border-b border-border bg-card/50 flex-shrink-0">
-            <div className="px-6 py-4">
-              <TopicInput
-                onSubmit={handleSubmit}
-                isRunning={isRunning}
-                onCancel={handleCancel}
-              />
-            </div>
-          </div>
+          {showingUsage ? (
+            <UsagePanel />
+          ) : (
+            <>
+              {/* Input section */}
+              <div className="border-b border-border bg-card/50 flex-shrink-0">
+                <div className="px-6 py-4">
+                  <TopicInput
+                    onSubmit={handleSubmit}
+                    isRunning={isRunning}
+                    onCancel={handleCancel}
+                  />
+                </div>
+              </div>
 
-          {/* Two-panel content */}
-          <div className="flex-1 flex min-h-0">
-            {/* Left panel: Agent log */}
-            <div className="w-[380px] min-w-[300px] border-r border-border flex flex-col bg-card/30">
-              <AgentLog
-                logs={agentLogs}
-                paperCount={paperCount}
-                isRunning={isRunning}
-              />
-            </div>
+              {/* Two-panel content */}
+              <div className="flex-1 flex min-h-0">
+                {/* Left panel: Agent log */}
+                <div className="w-[380px] min-w-[300px] border-r border-border flex flex-col bg-card/30">
+                  <AgentLog
+                    logs={agentLogs}
+                    paperCount={paperCount}
+                    isRunning={isRunning}
+                  />
+                </div>
 
-            {/* Right panel: Review document */}
-            <div className="flex-1 flex flex-col bg-white min-w-0">
-              <ReviewPanel
-                content={reviewContent}
-                isComplete={isComplete}
-                isRunning={isRunning}
-                paperCount={paperCount}
-                elapsedSeconds={elapsedSeconds}
-              />
-            </div>
-          </div>
+                {/* Right panel: Review document */}
+                <div className="flex-1 flex flex-col bg-white min-w-0">
+                  <ReviewPanel
+                    content={reviewContent}
+                    isComplete={isComplete}
+                    isRunning={isRunning}
+                    paperCount={paperCount}
+                    elapsedSeconds={elapsedSeconds}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
