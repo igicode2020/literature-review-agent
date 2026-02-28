@@ -30,6 +30,7 @@ export async function GET(
       _id: analysis._id,
       annotations: analysis.annotations,
       suggestions: analysis.suggestions,
+      ethicalScore: analysis.ethicalScore ?? null,
       createdAt: analysis.createdAt,
       updatedAt: analysis.updatedAt,
     },

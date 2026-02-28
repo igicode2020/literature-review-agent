@@ -14,9 +14,13 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Literature Review Agent",
+  title: "Ethical – Literature Review Agent",
   description:
     "AI-powered autonomous literature review agent that searches academic papers, extracts findings, and produces structured reviews with citations.",
+  icons: {
+    icon: "/fav.ico",
+    apple: "/Favicon.png",
+  },
 };
 
 export default function RootLayout({

@@ -243,6 +243,7 @@ export default function ReviewPanel({
   const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [isCachedAnalysis, setIsCachedAnalysis] = useState(false);
+  const [ethicalScore, setEthicalScore] = useState<number | null>(null);
 
   const isChecked = annotations.length > 0 || suggestions.length > 0;
 
@@ -302,6 +303,7 @@ export default function ReviewPanel({
       setCheckError("");
       setActiveHighlight(null);
       setIsCachedAnalysis(false);
+      setEthicalScore(null);
 
       // Fetch paper text
       setPaperLoading(true);
@@ -325,6 +327,9 @@ export default function ReviewPanel({
             setSuggestions(detail.suggestions);
             setIsCachedAnalysis(true);
             setSuggestionsOpen(true);
+            if (typeof detail.ethicalScore === "number") {
+              setEthicalScore(detail.ethicalScore);
+            }
           }
         }
       } catch {
@@ -348,6 +353,7 @@ export default function ReviewPanel({
     setPaperError("");
     setActiveHighlight(null);
     setIsCachedAnalysis(false);
+    setEthicalScore(null);
   }, []);
 
   /* ---- Drag-and-drop handlers ---- */
@@ -400,6 +406,7 @@ export default function ReviewPanel({
       setCheckError("");
       setActiveHighlight(null);
       setIsCachedAnalysis(false);
+      setEthicalScore(null);
 
       // Fetch paper text
       setPaperLoading(true);
@@ -429,6 +436,9 @@ export default function ReviewPanel({
               setSuggestions(cacheData.analysis.suggestions || []);
               setIsCachedAnalysis(true);
               setSuggestionsOpen(true);
+              if (typeof cacheData.analysis.ethicalScore === "number") {
+                setEthicalScore(cacheData.analysis.ethicalScore);
+              }
             }
           }
         }
@@ -453,6 +463,7 @@ export default function ReviewPanel({
     setActiveHighlight(null);
     setSuggestionsOpen(true);
     setIsCachedAnalysis(false);
+    setEthicalScore(null);
 
     try {
       const res = await fetch("/api/review/analyze-citations", {
@@ -467,8 +478,10 @@ export default function ReviewPanel({
       } else {
         const newAnnotations = data.annotations || [];
         const newSuggestions = data.suggestions || [];
+        const newEthicalScore = typeof data.ethicalScore === "number" ? data.ethicalScore : null;
         setAnnotations(newAnnotations);
         setSuggestions(newSuggestions);
+        setEthicalScore(newEthicalScore);
 
         // Save analysis to DB for future use
         try {
@@ -480,6 +493,7 @@ export default function ReviewPanel({
               paperFilename: droppedPaper.filename,
               annotations: newAnnotations,
               suggestions: newSuggestions,
+              ethicalScore: newEthicalScore,
             }),
           });
           // Notify sidebar to refresh analyses list
@@ -608,6 +622,40 @@ export default function ReviewPanel({
                 </span>
               );
             })}
+
+            {/* Ethical Score Bar */}
+            {ethicalScore !== null && (
+              <>
+                <div className="h-3 w-px bg-border" />
+                <div className="inline-flex items-center gap-2">
+                  <ShieldCheck className={cn(
+                    "h-3.5 w-3.5",
+                    ethicalScore >= 75 ? "text-emerald-600" :
+                    ethicalScore >= 50 ? "text-amber-600" : "text-red-600"
+                  )} />
+                  <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">
+                    Ethics
+                  </span>
+                  <div className="relative w-24 h-2 rounded-full bg-muted overflow-hidden border border-border/50">
+                    <div
+                      className={cn(
+                        "absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out",
+                        ethicalScore >= 75 ? "bg-emerald-500" :
+                        ethicalScore >= 50 ? "bg-amber-500" : "bg-red-500"
+                      )}
+                      style={{ width: `${ethicalScore}%` }}
+                    />
+                  </div>
+                  <span className={cn(
+                    "text-[11px] font-bold tabular-nums",
+                    ethicalScore >= 75 ? "text-emerald-700" :
+                    ethicalScore >= 50 ? "text-amber-700" : "text-red-700"
+                  )}>
+                    {ethicalScore}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         )}
 

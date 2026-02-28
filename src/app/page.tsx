@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { BookOpen, GraduationCap } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import Image from "next/image";
 import TopicInput from "@/components/TopicInput";
 import AgentLog, { LogEntry } from "@/components/AgentLog";
 import ReviewPanel from "@/components/ReviewPanel";
@@ -331,12 +332,16 @@ export default function Home() {
       <header className="border-b border-border bg-card flex-shrink-0">
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <GraduationCap className="h-5 w-5 text-primary" />
-            </div>
+            <Image
+              src="/Ethical.png"
+              alt="Ethical logo"
+              width={36}
+              height={36}
+              className="rounded-lg"
+            />
             <div>
               <h1 className="text-base font-semibold text-foreground tracking-tight">
-                Ethical 
+                Ethical
               </h1>
               <p className="text-xs text-muted-foreground">
                 AI-powered autonomous academic literature reviews

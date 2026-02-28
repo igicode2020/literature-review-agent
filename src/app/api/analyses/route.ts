@@ -19,6 +19,7 @@ export async function GET() {
       paperFilename: 1,
       annotationCount: 1,
       suggestionCount: 1,
+      ethicalScore: 1,
       createdAt: 1,
     })
     .toArray();
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { paperId, paperFilename, annotations, suggestions } = body;
+    const { paperId, paperFilename, annotations, suggestions, ethicalScore } = body;
 
     if (!paperId || !paperFilename) {
       return NextResponse.json(
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
           paperFilename,
           annotations: annotations || [],
           suggestions: suggestions || [],
+          ethicalScore: typeof ethicalScore === "number" ? ethicalScore : null,
           annotationCount: (annotations || []).length,
           suggestionCount: (suggestions || []).length,
           updatedAt: new Date(),

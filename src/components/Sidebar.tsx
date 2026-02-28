@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PaperManager from "./PaperManager";
+import Image from "next/image";
 
 interface ConversationSummary {
   _id: string;
@@ -193,6 +194,7 @@ export default function Sidebar({
             paperFilename: full.paperFilename,
             annotations: full.annotations,
             suggestions: full.suggestions,
+            ethicalScore: full.ethicalScore ?? null,
           },
         })
       );
@@ -418,6 +420,18 @@ export default function Sidebar({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Branding */}
+      <div className="px-3 py-2 border-t border-border flex items-center justify-center gap-2 opacity-60">
+        <Image
+          src="/EthicalWhite.png"
+          alt="Ethical"
+          width={18}
+          height={18}
+          className="rounded-sm"
+        />
+        <span className="text-[10px] text-muted-foreground tracking-wide uppercase">Powered by Ethical</span>
       </div>
 
       {/* User footer */}

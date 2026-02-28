@@ -96,6 +96,7 @@ You MUST respond with valid JSON and NOTHING ELSE. No markdown fences, no extra 
 
 Return this exact JSON structure:
 {
+  "ethicalScore": 75,
   "annotations": [
     {
       "quote": "exact short quote from the paper (10-40 words that can be found in the text)",
@@ -107,6 +108,15 @@ Return this exact JSON structure:
     "A complete, actionable suggestion sentence"
   ]
 }
+
+"ethicalScore" is a number from 0 to 100 representing the overall ethical quality of the paper. Consider:
+- Proper attribution and citation integrity (no plagiarism indicators)
+- Transparency in methodology and data reporting
+- Acknowledgement of limitations and conflicts of interest
+- Responsible use of sources (not cherry-picking or misrepresenting)
+- Respect for prior work and fair representation of opposing views
+- Adherence to academic integrity standards
+A score of 100 means exemplary ethical standards; 0 means severe ethical concerns.
 
 IMPORTANT RULES:
 - "quote" MUST be an EXACT substring copied from the paper text. Do NOT paraphrase. Keep quotes short (10-40 words) so they can be matched.
@@ -146,6 +156,7 @@ IMPORTANT RULES:
 
     // Parse JSON from Claude's response
     let parsed: {
+      ethicalScore?: number;
       annotations: Array<{
         quote: string;
         comment: string;
@@ -173,10 +184,14 @@ IMPORTANT RULES:
     // Validate structure
     if (!Array.isArray(parsed.annotations)) parsed.annotations = [];
     if (!Array.isArray(parsed.suggestions)) parsed.suggestions = [];
+    const ethicalScore = typeof parsed.ethicalScore === "number"
+      ? Math.max(0, Math.min(100, Math.round(parsed.ethicalScore)))
+      : null;
 
     return NextResponse.json({
       annotations: parsed.annotations,
       suggestions: parsed.suggestions,
+      ethicalScore,
       paperFilename: paper.filename,
     });
   } catch (error) {

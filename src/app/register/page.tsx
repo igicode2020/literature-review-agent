@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GraduationCap, UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
@@ -61,14 +62,18 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="p-3 bg-primary/10 rounded-xl mb-4">
-            <GraduationCap className="h-8 w-8 text-primary" />
-          </div>
+          <Image
+            src="/Ethical.png"
+            alt="Ethical logo"
+            width={56}
+            height={56}
+            className="rounded-xl mb-4"
+          />
           <h1 className="text-2xl font-semibold text-foreground tracking-tight">
             Create an account
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Get started with your Literature Review Agent
+            Get started with Ethical
           </p>
         </div>
 
